@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -35,6 +36,9 @@ class _MyGalleryAppState extends State<MyGalleryApp> {
   final ImagePicker _picker = ImagePicker();
   List<XFile>? images;
 
+  int currentPage = 0;
+  final pageController = PageController();
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +48,22 @@ class _MyGalleryAppState extends State<MyGalleryApp> {
 
   Future<void> loadImages() async {
     images = await _picker.pickMultiImage();
+
+    if (images != null) {
+      Timer.periodic(const Duration(seconds: 5), (timer) {
+        currentPage++;
+
+        if (currentPage > images!.length - 1) {
+          currentPage = 0;
+        }
+
+        pageController.animateToPage(
+          currentPage,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeIn,
+        );
+      });
+    }
 
     setState(() {});
   }
@@ -55,10 +75,11 @@ class _MyGalleryAppState extends State<MyGalleryApp> {
         title: const Text('전자액자'),
       ),
       body: images == null
-          ? Center(
+          ? const Center(
               child: Text('No data'),
             )
           : PageView(
+              controller: pageController,
               children: images!.map((image) {
                 return FutureBuilder<Uint8List>(
                     future: image.readAsBytes(),
@@ -67,7 +88,7 @@ class _MyGalleryAppState extends State<MyGalleryApp> {
 
                       if (data == null ||
                           snapshot.connectionState == ConnectionState.waiting) {
-                        return Center(child: CircularProgressIndicator());
+                        return const Center(child: CircularProgressIndicator());
                       }
                       return Image.memory(
                         data,
